@@ -17,3 +17,4 @@ A aplicação recebe um nome via requisição HTTP e retorna a casa de Hogwarts 
 - `main.py`: Entrada da requisição HTTP do GCP.
 - `house.py`: Lógica de validação e hashing para ordenação das casas.
 - `requirements.txt`: Dependências do ambiente Python.
+
