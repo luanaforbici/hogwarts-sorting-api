@@ -1,20 +1,18 @@
-# Chapéu Seletor Serverless API (GCP)
+# Checkpoint 1 - Função Serverless na Nuvem (Hogwarts Sorting API)
 
-API desenvolvida para a disciplina de Serverless Computing.
-A aplicação recebe um nome via requisição HTTP e retorna a casa de Hogwarts correspondente em formato JSON.
+Este projeto contém uma função serverless desenvolvida em Python que responde a requisições HTTP e foi implantada no GCP (Google Cloud Platform). A API recebe um nome e determina de forma determinística a casa de Hogwarts correspondente.
 
-## 🔗 Endpoint em Produção
-- **URL Base**: `<COLE_AQUI_A_URL_GERADA_PELO_GCP>`
-- **Exemplo 1**: `<SUA_URL>/Luana`
-- **Exemplo 2**: `<SUA_URL>/?nome=Luana`
+## Provedor Utilizado
+* **Google Cloud Platform (GCP)** - Cloud Run functions
 
-## 🛠️ Tecnologias
-- **Linguagem**: Python 3.11
-- **Plataforma**: Google Cloud Platform (GCP)
-- **Serviço**: Cloud Run functions (FaaS Gen 2)
+## Como rodar localmente
 
-## 📁 Estrutura do Projeto
-- `main.py`: Entrada da requisição HTTP do GCP.
-- `house.py`: Lógica de validação e hashing para ordenação das casas.
-- `requirements.txt`: Dependências do ambiente Python.
+### Pré-requisitos
+* Python 3.11 ou superior instalado
+* Gerenciador de pacotes `pip`
+* Terminal de comandos aberto
 
+### Passo a passo
+1. Clone o repositório para sua máquina:
+   ```bash
+   git clone [https://github.com/luanaforbici/hogwarts-sorting-api.git](https://github.com/luanaforbici/hogwarts-sorting-api.git)
