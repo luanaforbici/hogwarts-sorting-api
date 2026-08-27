@@ -1,50 +1,28 @@
+import base64
 import json
 import functions_framework
 from house import sort_into_house, normalize
 
-@functions_framework.http
-def house_sorting(request):
-    """
-    Função HTTP para Cloud Run functions.
-    Aceita o nome enviado de duas formas na URL:
-    1. Query Parameter: ?nome=Luana
-    2. Direto na URL: /Luana
-    """
-    # 1. Tenta pegar o nome se a pessoa digitou ?nome=Luana
-    request_args = request.args
-    name = request_args.get('nome') if request_args else None
+@functions_framework.cloud_event
+def house_sorting_pubsub(cloud_event):
+    pubsub_data = cloud_event.data.get("message", {}).get("data")
+    if not pubsub_data:
+        print("[ERRO] Nenhuma mensagem recebida.")
+        return
 
-    # 2. Se não achou em ?nome=, tenta pegar do final da URL (ex: /Luana)
-    if not name:
-        path = request.path.strip('/')
-        if path:
-            name = path
+    raw_message = base64.b64decode(pubsub_data).decode("utf-8").strip()
+    name = raw_message
+    try:
+        json_payload = json.loads(raw_message)
+        if isinstance(json_payload, dict) and "nome" in json_payload:
+            name = json_payload["nome"]
+    except json.JSONDecodeError:
+        pass
 
-    clean_name = normalize(name) if name else ""
-
-    # 3. Se a pessoa não informou um nome, retorna erro
+    clean_name = normalize(name)
     if not clean_name:
-        response_data = {
-            "error": "Por favor, informe um nome. Exemplo: /Luana ou /?nome=Luana"
-        }
-        return (
-            json.dumps(response_data, ensure_ascii=False),
-            400,
-            {'Content-Type': 'application/json; charset=utf-8'}
-        )
+        print("[AVISO] Nome inválido.")
+        return
 
-    # 4. Executa a lógica de seleção da casa
     house = sort_into_house(clean_name)
-
-    # 5. Monta o resultado JSON
-    response_data = {
-        "nome": clean_name.capitalize(),
-        "casa": house,
-        "mensagem": f"O Chapéu Seletor definiu que {clean_name.capitalize()} pertence à {house}!"
-    }
-
-    return (
-        json.dumps(response_data, ensure_ascii=False),
-        200,
-        {'Content-Type': 'application/json; charset=utf-8'}
-    )
+    print(f"[CHAPÉU SELETOR] Processado com sucesso! Nome: {clean_name.capitalize()} | Casa: {house}")

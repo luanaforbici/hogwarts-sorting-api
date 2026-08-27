@@ -1,1 +1,3 @@
 functions-framework==3.*
+cloudevents==1.*
+gunicorn==21.*
