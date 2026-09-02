@@ -1,23 +1,23 @@
-# Checkpoint 2 - Arquitetura Event-Driven com GCP Pub/Sub (Hogwarts Sorting API)
+# Checkpoint 3 - Orquestração Serverless com Google Cloud Workflows (Hogwarts Sorting API)
 
-Este projeto evolui a API Serverless para uma arquitetura orientada a eventos (*Event-Driven*). A função deixa de responder a chamadas HTTP diretas e passa a ser acionada assincronamente por mensagens publicadas em um tópico do Google Cloud Pub/Sub.
+Este repositório contém a solução do Checkpoint 3, evoluindo o pipeline das entregas anteriores para uma arquitetura orquestrada de serviços serverless no **Google Cloud Platform (GCP)**.
 
-## Provedor Utilizado
-* **Google Cloud Platform (GCP)** - Cloud Run functions & Cloud Pub/Sub
+## Provedores e Serviços Utilizados
+* **Google Cloud Workflows:** Orquestração do fluxo de execução.
+* **Google Cloud Pub/Sub:** Mensageria assíncrona baseada em eventos.
+* **Cloud Run functions:** Execução do código de ordenação das casas de Hogwarts.
 
-## Arquitetura
-1. Uma mensagem (nome do bruxo/a) é publicada no tópico do Pub/Sub `hogwarts-sorting-topic`.
-2. O evento dispara a Cloud Function acionada por `CloudEvent`.
-3. A função decodifica o payload em Base64, processa a casa de Hogwarts e registra o resultado nos logs de execução.
+## Arquitetura e Fluxo de Execução
+1. O **Cloud Workflows** recebe os parâmetros de entrada (ex: nome do estudante) e valida o payload.
+2. O workflow publica a mensagem codificada em Base64 no tópico `hogwarts-sorting-topic` do **Pub/Sub**.
+3. A **Cloud Function** acionada por `CloudEvent` processa a mensagem, sorteia a casa e grava o resultado nos logs do GCP.
+4. O workflow possui mecanismos nativos de resiliência, com tratamento de exceções e regras de retentativas (*retry*) para falhas transitórias de rede ou serviço.
 
-## Como rodar localmente
+## Estrutura do Repositório
+* `main.py`: Código principal da Cloud Function.
+* `house.py`: Lógica do Chapéu Seletor.
+* `requirements.txt`: Dependências do projeto.
+* `workflows/workflow.yaml`: Definição da orquestração do Cloud Workflows em YAML.
 
-### Pré-requisitos
-* Python 3.11 ou superior
-* Gerenciador de pacotes `pip`
-* Terminal de comandos
-
-### Passo a passo
-1. Clone o repositório:
-   ```bash
-   git clone [https://github.com/luanaforbici/hogwarts-sorting-api.git](https://github.com/luanaforbici/hogwarts-sorting-api.git)
+## Segurança
+Este repositório não contém chaves privadas, credenciais, segredos ou arquivos `.json` confidenciais. Toda a autenticação entre os serviços do GCP é realizada nativamente via IAM e contas de serviço autorizadas.
