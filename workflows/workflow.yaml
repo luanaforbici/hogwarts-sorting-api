@@ -48,4 +48,5 @@ custom_retry_predicate:
         switch:
           - condition: ${e.code == 500 or e.code == 503 or e.code == 429}
             return: true
+    - default_return:
         return: false
