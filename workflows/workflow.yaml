@@ -9,7 +9,7 @@ main:
 
     - validate_input:
         switch:
-          - condition: ${len(trim(student_name)) == 0}
+          - condition: ${len(student_name) == 0}
             raise: "O nome do estudante não pode ser vazio."
 
     - publish_to_pubsub:
