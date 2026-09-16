@@ -1,9 +1,6 @@
-import hashlib
+import random
 
-def normalize(name: str) -> str:
-    return name.strip().lower()
-
-def sort_into_house(name: str) -> str:
-    houses = ["Grifinória", "Sonserina", "Corvinal", "Lufa-Lufa"]
-    hash_value = int(hashlib.md5(name.encode('utf-8')).hexdigest(), 16)
-    return houses[hash_value % 4]
+def get_house(student_name: str) -> str:
+    houses = ["Gryffindor", "Slytherin", "Ravenclaw", "Hufflepuff"]
+    # Retorna uma casa baseada em hash determinístico ou aleatório
+    return houses[len(student_name) % 4]
