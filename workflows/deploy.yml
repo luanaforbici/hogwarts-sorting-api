@@ -34,7 +34,7 @@ jobs:
 
     - name: Enable GCP APIs
       run: |
-        gcloud services enable cloudfunctions.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com run.googleapis.com
+        gcloud services enable cloudresourcemanager.googleapis.com cloudfunctions.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com run.googleapis.com
 
     - name: Deploy Cloud Function
       run: |
