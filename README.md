@@ -14,5 +14,5 @@ A integração e implantação contínuas da aplicação foram automatizadas via
 
 ### Evidências Visuais:
 
-* **Execução do Pipeline**: Print do job finalizado com sucesso no GitHub Actions em `docs/deploy_serverless_function.png`.
-* **Serviço Ativo no GCP**: Print da função ativa no Console do Google Cloud em `docs/Hogwarts-sorting-pubsub.png`.
+* **Execução do Pipeline**: [Visualizar Log do GitHub Actions](docs/deploy_serverless_function.png)
+* **Serviço Ativo no GCP**: [Visualizar Status do Serviço no GCP Console](docs/hogwarts_sorting_pubsub.png)
