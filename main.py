@@ -2,54 +2,41 @@ import json
 import base64
 import logging
 import functions_framework
-from house import get_house
+import vertexai
+from vertexai.generative_models import GenerativeModel
 
-# Configuração de logging estruturado no formato JSON para o Google Cloud Logging
 logging.basicConfig(level=logging.INFO)
 
+# Inicializa Vertex AI (ajuste para o seu project_id se necessário)
+vertexai.init(project="hogwarts-sorting-api", location="us-central1")
+model = GenerativeModel("gemini-1.5-flash")
+
 def log_structured(severity: str, message: str, payload: dict = None):
-    log_entry = {
+    print(json.dumps({
         "severity": severity,
         "message": message,
         "service": "hogwarts-sorting-api",
         "payload": payload or {}
-    }
-    print(json.dumps(log_entry))
+    }))
 
 @functions_framework.cloud_event
 def subscribe(cloud_event):
     try:
-        # Extração e decodificação do payload do Pub/Sub
         pubsub_data = cloud_event.data.get("message", {}).get("data", "")
         if not pubsub_data:
-            log_structured("WARNING", "Mensagem recebida sem dados válidos no payload.")
             return
 
         student_name = base64.b64decode(pubsub_data).decode("utf-8").strip()
 
-        if not student_name:
-            log_structured("WARNING", "Nome do estudante está vazio após decodificação.")
-            return
-
-        # Lógica de negócio: Seleção da casa de Hogwarts
-        selected_house = get_house(student_name)
-
-        # Log estruturado de Sucesso
-        log_structured(
-            severity="INFO",
-            message=f"[CHAPÉU SELETOR] Seleção concluída com sucesso.",
-            payload={
-                "student_name": student_name,
-                "selected_house": selected_house,
-                "status": "SUCCESS"
-            }
-        )
+        # Chamada à Vertex AI (Gemini)
+        prompt = f"Atue como o Chapéu Seletor de Hogwarts. Analise o nome '{student_name}' e escolha uma das quatro casas (Gryffindor, Slytherin, Ravenclaw, Hufflepuff). Responda estritamente em JSON no formato: {{\"house\": \"NOME_DA_CASA\", \"reason\": \"JUSTIFICATIVA_CURTA\"}}"
+        response = model.generate_content(prompt)
+        
+        log_structured("INFO", "[CHAPÉU SELETOR - IA] Seleção realizada via Vertex AI", {
+            "student_name": student_name,
+            "ia_response": response.text
+        })
 
     except Exception as e:
-        # Log estruturado de Erro
-        log_structured(
-            severity="ERROR",
-            message=f"Falha ao processar mensagem no Chapéu Seletor: {str(e)}",
-            payload={"error_detail": str(e), "status": "ERROR"}
-        )
+        log_structured("ERROR", f"Falha no processamento: {str(e)}")
         raise e
