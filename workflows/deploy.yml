@@ -45,4 +45,4 @@ jobs:
           --source=. \
           --entry-point=subscribe \
           --trigger-topic=hogwarts-sorting-topic \
-          --memory=256Mi
+          --memory=512Mi
