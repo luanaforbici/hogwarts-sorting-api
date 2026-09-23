@@ -39,25 +39,25 @@ def subscribe(cloud_event):
             return
 
         # 2. Chamada da Vertex AI Gemini
-        try:
+       try:
+            # Prompt reforçando o idioma português e a variação criativa
             prompt = (
                 f"Atue como o Chapéu Seletor de Hogwarts. Analise o nome '{student_name}' "
                 f"e selecione uma das quatro casas (Gryffindor, Slytherin, Ravenclaw, Hufflepuff). "
-                f"Responda estritamente em formato JSON com as chaves 'house' e 'reason'."
+                f"Seja extremamente criativo, único e persuasivo no seu discurso. "
+                f"Responda OBRIGATORIAMENTE em português do Brasil. "
+                f"Retorne estritamente um objeto JSON com as chaves 'house' e 'reason'."
             )
 
+            # Chamada com alta temperatura para maximizar a variação entre chamadas
             response = client.models.generate_content(
-                model="gemini-2.5-flash",
+                model="gemini-1.5-flash-001",
                 contents=prompt,
+                config={
+                    "temperature": 1.0,  # Alta variação e criatividade a cada execução
+                }
             )
             ia_output = response.text
-
-        except Exception as ia_err:
-            log_structured("ERROR", f"Falha na chamada da Vertex AI: {str(ia_err)}")
-            ia_output = json.dumps({
-                "house": "Gryffindor",
-                "reason": f"Seleção de contingência devido a erro na IA: {str(ia_err)}"
-            })
 
         # 3. Log estruturado do resultado
         log_structured(
