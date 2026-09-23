@@ -17,38 +17,48 @@ def log_structured(severity: str, message: str, payload: dict = None):
 @functions_framework.cloud_event
 def subscribe(cloud_event):
     try:
-        # Extração e decodificação do payload da mensagem Pub/Sub
+        # 1. Extração do Payload do Pub/Sub
         pubsub_data = cloud_event.data.get("message", {}).get("data", "")
         if not pubsub_data:
-            log_structured("WARNING", "Mensagem recebida sem payload.")
+            log_structured("WARNING", "Mensagem recebida sem dados no payload.")
             return
 
         student_name = base64.b64decode(pubsub_data).decode("utf-8").strip()
         if not student_name:
-            log_structured("WARNING", "Nome do estudante está vazio.")
+            log_structured("WARNING", "Nome do estudante veio vazio.")
             return
 
-        # Inicialização da Vertex AI DENTRO do evento (evita crash no startup do container)
-        import vertexai
-        from vertexai.generative_models import GenerativeModel
+        # 2. Importação e Inicialização da Vertex AI em tempo de execução
+        try:
+            import vertexai
+            from vertexai.generative_models import GenerativeModel
 
-        vertexai.init(project="hogwarts-sorting-api", location="us-central1")
-        model = GenerativeModel("gemini-1.5-flash")
+            vertexai.init(project="hogwarts-sorting-api", location="us-central1")
+            model = GenerativeModel("gemini-1.5-flash")
 
-        # Prompt para a seleção de casas
-        prompt = (
-            f"Atue como o Chapéu Seletor de Hogwarts. Analise o nome '{student_name}' "
-            f"e selecione uma das quatro casas (Gryffindor, Slytherin, Ravenclaw, Hufflepuff). "
-            f"Responda estritamente no formato JSON com as chaves 'house' e 'reason'."
-        )
-        response = model.generate_content(prompt)
+            prompt = (
+                f"Atue como o Chapéu Seletor de Hogwarts. Analise o nome '{student_name}' "
+                f"e selecione uma das quatro casas (Gryffindor, Slytherin, Ravenclaw, Hufflepuff). "
+                f"Responda estritamente em formato JSON com as chaves 'house' e 'reason'."
+            )
+            
+            response = model.generate_content(prompt)
+            ia_output = response.text
 
+        except Exception as ia_err:
+            log_structured("ERROR", f"Falha na chamada da Vertex AI: {str(ia_err)}")
+            ia_output = json.dumps({
+                "house": "Gryffindor",
+                "reason": f"Seleção de contingência devido a erro na IA: {str(ia_err)}"
+            })
+
+        # 3. Log estruturado de sucesso
         log_structured(
             severity="INFO",
-            message="[CHAPÉU SELETOR - IA] Seleção realizada com sucesso.",
+            message="[CHAPÉU SELETOR - IA] Processamento de seleção concluído.",
             payload={
                 "student_name": student_name,
-                "ia_response": response.text,
+                "ia_response": ia_output,
                 "status": "SUCCESS"
             }
         )
@@ -56,7 +66,6 @@ def subscribe(cloud_event):
     except Exception as e:
         log_structured(
             severity="ERROR",
-            message=f"Erro durante o processamento do evento: {str(e)}",
+            message=f"Falha crítica na função: {str(e)}",
             payload={"error_detail": str(e)}
         )
-        # Não damos raise para não entrar em loop infinito de falhas no container
