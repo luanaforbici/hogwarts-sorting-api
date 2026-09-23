@@ -2,14 +2,8 @@ import json
 import base64
 import logging
 import functions_framework
-import vertexai
-from vertexai.generative_models import GenerativeModel
 
 logging.basicConfig(level=logging.INFO)
-
-# Inicialização da Vertex AI na região us-central1
-vertexai.init(project="hogwarts-sorting-api", location="us-central1")
-model = GenerativeModel("gemini-1.5-flash")
 
 def log_structured(severity: str, message: str, payload: dict = None):
     log_entry = {
@@ -23,19 +17,25 @@ def log_structured(severity: str, message: str, payload: dict = None):
 @functions_framework.cloud_event
 def subscribe(cloud_event):
     try:
-        # Extração e decodificação da mensagem do Pub/Sub
+        # Extração e decodificação do payload da mensagem Pub/Sub
         pubsub_data = cloud_event.data.get("message", {}).get("data", "")
         if not pubsub_data:
-            log_structured("WARNING", "Mensagem recebida sem payload válido.")
+            log_structured("WARNING", "Mensagem recebida sem payload.")
             return
 
         student_name = base64.b64decode(pubsub_data).decode("utf-8").strip()
-
         if not student_name:
             log_structured("WARNING", "Nome do estudante está vazio.")
             return
 
-        # Chamada à Vertex AI (Gemini)
+        # Inicialização da Vertex AI DENTRO do evento (evita crash no startup do container)
+        import vertexai
+        from vertexai.generative_models import GenerativeModel
+
+        vertexai.init(project="hogwarts-sorting-api", location="us-central1")
+        model = GenerativeModel("gemini-1.5-flash")
+
+        # Prompt para a seleção de casas
         prompt = (
             f"Atue como o Chapéu Seletor de Hogwarts. Analise o nome '{student_name}' "
             f"e selecione uma das quatro casas (Gryffindor, Slytherin, Ravenclaw, Hufflepuff). "
@@ -43,10 +43,9 @@ def subscribe(cloud_event):
         )
         response = model.generate_content(prompt)
 
-        # Log estruturado de sucesso com a resposta do Gemini
         log_structured(
             severity="INFO",
-            message="[CHAPÉU SELETOR - IA] Seleção de casa realizada com sucesso via Vertex AI.",
+            message="[CHAPÉU SELETOR - IA] Seleção realizada com sucesso.",
             payload={
                 "student_name": student_name,
                 "ia_response": response.text,
@@ -57,7 +56,7 @@ def subscribe(cloud_event):
     except Exception as e:
         log_structured(
             severity="ERROR",
-            message=f"Falha ao processar mensagem no Chapéu Seletor: {str(e)}",
-            payload={"error_detail": str(e), "status": "ERROR"}
+            message=f"Erro durante o processamento do evento: {str(e)}",
+            payload={"error_detail": str(e)}
         )
-        raise e
+        # Não damos raise para não entrar em loop infinito de falhas no container
