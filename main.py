@@ -2,8 +2,14 @@ import json
 import base64
 import logging
 import functions_framework
+import vertexai
+from vertexai.generative_models import GenerativeModel
 
 logging.basicConfig(level=logging.INFO)
+
+# Inicializa a Vertex AI com o ID do projeto e localização us-central1
+vertexai.init(project="hogwarts-sorting-api", location="us-central1")
+
 
 def log_structured(severity: str, message: str, payload: dict = None):
     log_entry = {
@@ -13,6 +19,7 @@ def log_structured(severity: str, message: str, payload: dict = None):
         "payload": payload or {}
     }
     print(json.dumps(log_entry))
+
 
 @functions_framework.cloud_event
 def subscribe(cloud_event):
@@ -30,9 +37,8 @@ def subscribe(cloud_event):
 
         # 2. Chamada da Vertex AI Gemini
         try:
-            from google import genai
-
-            client = genai.Client(vertexai=True, project="hogwarts-sorting-api", location="us-central1")
+            # Modelo padrão suportado pela Vertex AI na us-central1
+            model = GenerativeModel("gemini-1.5-flash")
 
             prompt = (
                 f"Atue como o Chapéu Seletor de Hogwarts. Analise o nome '{student_name}' "
@@ -40,10 +46,7 @@ def subscribe(cloud_event):
                 f"Responda estritamente em formato JSON com as chaves 'house' e 'reason'."
             )
 
-            response = client.models.generate_content(
-                model="gemini-1.5-flash",
-                contents=prompt,
-            )
+            response = model.generate_content(prompt)
             ia_output = response.text
 
         except Exception as ia_err:
