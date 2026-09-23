@@ -38,7 +38,7 @@ def subscribe(cloud_event):
         # 2. Chamada da Vertex AI Gemini
         try:
             # Modelo padrão suportado pela Vertex AI na us-central1
-            model = GenerativeModel("gemini-1.5-flash")
+            model = GenerativeModel("gemini-1.5-flash-001")
 
             prompt = (
                 f"Atue como o Chapéu Seletor de Hogwarts. Analise o nome '{student_name}' "
