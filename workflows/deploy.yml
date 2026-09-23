@@ -37,12 +37,12 @@ jobs:
         gcloud services enable cloudresourcemanager.googleapis.com cloudfunctions.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com run.googleapis.com
 
     - name: Deploy Cloud Function
-      run: |
-        gcloud functions deploy hogwarts-sorting-pubsub \
-          --gen2 \
-          --region=us-central1 \
-          --runtime=python311 \
-          --source=. \
-          --entry-point=subscribe \
-          --trigger-topic=hogwarts-sorting-topic \
-          --memory=512Mi
+        run: |
+          gcloud functions deploy hogwarts-sorting-pubsub \
+            --gen2 \
+            --runtime=python311 \
+            --region=us-central1 \
+            --source=. \
+            --entry-point=subscribe \
+            --trigger-topic=hogwarts-sorting-topic \
+            --memory=512Mi
