@@ -25,24 +25,25 @@ def subscribe(cloud_event):
 
         student_name = base64.b64decode(pubsub_data).decode("utf-8").strip()
         if not student_name:
-            log_structured("WARNING", "Nome do estudante veio vazio.")
+            log_structured("WARNING", "Nome do estudante está vazio.")
             return
 
-        # 2. Importação e Inicialização da Vertex AI em tempo de execução
+        # 2. Chamada da Vertex AI Gemini
         try:
-            import vertexai
-            from vertexai.generative_models import GenerativeModel
+            from google import genai
 
-            vertexai.init(project="hogwarts-sorting-api", location="us-central1")
-            model = GenerativeModel("gemini-1.5-flash")
+            client = genai.Client(vertexai=True, project="hogwarts-sorting-api", location="us-central1")
 
             prompt = (
                 f"Atue como o Chapéu Seletor de Hogwarts. Analise o nome '{student_name}' "
                 f"e selecione uma das quatro casas (Gryffindor, Slytherin, Ravenclaw, Hufflepuff). "
                 f"Responda estritamente em formato JSON com as chaves 'house' e 'reason'."
             )
-            
-            response = model.generate_content(prompt)
+
+            response = client.models.generate_content(
+                model="gemini-1.5-flash",
+                contents=prompt,
+            )
             ia_output = response.text
 
         except Exception as ia_err:
@@ -52,7 +53,7 @@ def subscribe(cloud_event):
                 "reason": f"Seleção de contingência devido a erro na IA: {str(ia_err)}"
             })
 
-        # 3. Log estruturado de sucesso
+        # 3. Log estruturado do resultado
         log_structured(
             severity="INFO",
             message="[CHAPÉU SELETOR - IA] Processamento de seleção concluído.",
