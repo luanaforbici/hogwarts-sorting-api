@@ -48,13 +48,14 @@ def subscribe(cloud_event):
                 "Retorne um JSON contendo as chaves 'house' e 'reason'."
             )
 
-            # Configuração que força a saída estrita em JSON e evita cortes
+            # Configuração otimizada para ser ultrarrápida e desativar o AFC automático
             response = client.models.generate_content(
                 model="gemini-2.5-flash",
                 contents=prompt,
                 config={
-                    "temperature": 0.9,
-                    "response_mime_type": "application/json"  # Força o Gemini a estruturar o JSON completo
+                    "temperature": 0.8,
+                    "response_mime_type": "application/json",
+                    "tools": []  # Desativa o Automatic Function Calling (AFC) que estava atrasando
                 }
             )
             ia_output = response.text
