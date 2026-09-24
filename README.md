@@ -29,42 +29,40 @@ API Serverless orientada a eventos implantada na Google Cloud Platform (GCP) que
  │ Cloud Logging (Logs) │  (Log Estruturado em JSON)
  └──────────────────────┘
 
-Justificativa das Escolhas Arquiteturais
-Arquitetura Event-Driven (GCP Pub/Sub + Eventarc)
+### Justificativa das Escolhas Arquiteturais
 
-Por quê: Garante o desacoplamento entre os produtores de eventos e o processamento backend. O Pub/Sub lida com picos de tráfego (resiliência), enquanto o Eventarc roteia a mensagem via gatilhos nativos diretamente para o ambiente Serverless.
+* **Arquitetura Event-Driven (GCP Pub/Sub + Eventarc)**
+  * **Por quê:** Garante o desacoplamento total entre os produtores de eventos e o backend de processamento. O Pub/Sub absorve picos de tráfego de forma resiliente e o Eventarc entrega os eventos de maneira automática para a Cloud Function.
 
-GCP Cloud Functions (2ª Geração / Cloud Run)
+* **GCP Cloud Functions (2ª Geração / Cloud Run)**
+  * **Por quê:** Adota o modelo *scale-to-zero* (custo zero quando ocioso). A 2ª geração roda sobre a infraestrutura do Cloud Run, proporcionando maior tempo limite de execução (*timeout*) e melhor capacidade de concorrência para chamadas à API de IA.
 
-Por quê: Modelo de bilhetagem scale-to-zero (custo zero quando ocioso). A 2ª geração roda sobre a infraestrutura do Cloud Run, permitindo maior tempo de execução (timeout) e melhor concorrência para chamadas à API de IA.
+* **Vertex AI com Modelo `gemini-2.5-flash`**
+  * **Por quê:** O modelo Flash foi escolhido por sua baixíssima latência e excelente custo-benefício para geração de texto criativo.
+  * **Otimização do Tempo de Resposta (`tools: []`):** O parâmetro `tools: []` desativa expressamente o *Automatic Function Calling* (AFC) da SDK, evitando processamentos desnecessários e garantindo a resposta mais rápida possível.
+  * **Structured Outputs (`response_mime_type: "application/json"`):** Garante que o modelo retorne estritamente um schema JSON válido, eliminando falhas de parsing no backend.
 
-Vertex AI com Modelo gemini-2.5-flash
+* **Observabilidade e Logs Estruturados (Cloud Logging)**
+  * **Por quê:** A aplicação emite logs formatados em JSON (`severity`, `message`, `payload`), facilitando a auditoria, a rastreabilidade dos retornos da IA e a criação de alertas ou métricas no GCP.
+ 
+--- 
 
-Por quê: O modelo Flash oferece baixíssima latência e excelente custo-benefício para tarefas de geração de texto criativo.
+## 🛠️ Tecnologias e SDKs
 
-Structured Outputs (response_mime_type: "application/json"): Garante que o modelo retorne estritamente um schema JSON pré-definido, evitando respostas truncadas e elimina falhas de parsing no backend.
+* **Linguagem:** Python 3.11
+* **Plataforma Nuvem:** Google Cloud Platform (GCP)
+* **Serviços Utilizados:** Cloud Pub/Sub, Cloud Functions v2, Eventarc, Vertex AI, Cloud Logging
+* **Bibliotecas Python principais:** `google-genai`, `functions-framework`, `cloudevents`
 
-Observabilidade e Logs Estruturados (Cloud Logging)
+---
 
-Por quê: A aplicação emite logs formatados em JSON (severity, message, payload), permitindo auditoria simples, rastreabilidade dos retornos da IA e criação de alertas/métricas na nuvem.
+## 🔒 Segurança e Boas Práticas
 
-🛠️ Tecnologias e SDKs
-Linguagem: Python 3.11
-
-Plataforma Nuvem: Google Cloud Platform (GCP)
-
-Serviços Utilizados: Cloud Pub/Sub, Cloud Functions v2, Eventarc, Vertex AI, Cloud Logging
-
-Bibliotecas Python principais: google-genai, functions-framework, cloudevents
-
-🔒 Segurança e Boas Práticas
 Conforme as diretrizes de segurança adotadas no projeto:
 
-Autenticação Nativa (IAM): Nenhuma chave de API (API Keys) ou Service Account Key em formato .json foi versionada no repositório.
-
-Service Accounts Dedicadas: A aplicação utiliza a Service Account nativa do ambiente Google Cloud, gerenciada com permissões mínimas no IAM (como o papel de executor da Vertex AI).
-
-Gitignore Configurado: Todos os arquivos de ambiente (.env), dados locais de desenvolvimento e credenciais temporárias foram estritamente excluídos do controle de versão.
+* **Autenticação Nativa (IAM):** Nenhuma chave de API (*API Keys*) ou *Service Account Key* em formato `.json` foi versionada no repositório.
+* **Service Accounts Dedicadas:** A aplicação utiliza a Service Account nativa do ambiente Google Cloud, gerenciada com permissões mínimas no IAM (como o papel de executor da Vertex AI).
+* **Gitignore Configurado:** Todos os arquivos de ambiente (`.env`), dados locais de desenvolvimento e credenciais temporárias foram estritamente excluídos do controle de versão.
 
 📁 Estrutura do Repositório
 .
@@ -161,26 +159,31 @@ def subscribe(cloud_event):
             payload={"error_detail": str(e)}
         )
 
-🧪 Como Testar a Aplicação
-Os testes da aplicação foram realizados diretamente pela interface gráfica do Google Cloud Console:
+## 🧪 Como Testar a Aplicação
 
-Acesse o console do Cloud Pub/Sub e selecione o tópico hogwarts-sorting-topic.
+Os testes da aplicação foram realizados diretamente pela interface gráfica do **Google Cloud Console**:
 
-Vá até a aba Mensagens e clique em Publicar Mensagem.
+1. Acesse o console do **Cloud Pub/Sub** e selecione o tópico `hogwarts-sorting-topic`.
+2. Vá até a aba **Mensagens** e clique em **Publicar mensagem**.
+3. No campo do corpo da mensagem, informe o nome do estudante (ex: `Harry Potter`) e clique em **Publicar**.
+4. O evento é processado de forma assíncrona pela Cloud Function v2 e o resultado fica disponível no **Cloud Logging**.
 
-No campo do corpo da mensagem, informe o nome do estudante (ex: Harry Potter) e clique em Publicar.
+---
 
-O evento é processado pela Cloud Function v2 e o resultado fica disponível no Cloud Logging.
+## 📑 Exemplo de Saída nos Logs (Cloud Logging)
 
-📑 Exemplo de Saída nos Logs (Cloud Logging)
 Exemplo real extraído dos logs da aplicação após o processamento da mensagem de teste:
 
-jsonPayload: {
-message: "[CHAPÉU SELETOR - IA] Processamento de seleção concluído."
-payload: {
-ia_response: "{
-  "house": "Grifinória",
-  "reason": "Ah, Potter... um nome que ecoa através dos salões de Hogwarts com a força de um trovão. Sinto sua mente, um caldeirão borbulhante de emoções e um potencial colossal. Vejo o peso de um legado imenso, a sombra de um destino que você carrega com uma resiliência notável. Muitos pensariam na astúcia, na sede de provar-se, na capacidade de sobrevivência que roça o ardiloso... sim, há um toque ali, uma conexão profunda com um poder que poderia ter levado a outro caminho. Poderia florescer onde a ambição e a determinação são a moeda mais forte, e a sua linhagem, por mais que negue, tem raízes profundas ali. A tentação é forte, oh, sim, muito forte para a Sonserina. Mas não é só isso. Sinto a lealdade inabalável aos seus amigos, um coração que busca a justiça e a verdade, mesmo que isso signifique dor e sacrifício. E a inteligência, a sagacidade para desvendar segredos e a curiosidade para entender o mundo, não são desprezíveis. Contudo, no fundo do seu ser, mais profundo que qualquer astúcia ou desejo de conhecimento, reside uma coragem que arde como um braseiro inextinguível. Não é uma coragem temerária, mas a bravura de enfrentar o que é certo, mesmo quando o medo é paralisante. É a audácia de se levantar contra a escuridão, a tenacidade de proteger aqueles que ama, a vontade inquebrantável de fazer o bem. É a sua escolha, Potter, que o define, e essa escolha aponta para um único lugar. Onde os corações valentes encontram seu lar, onde a ousadia é celebrada e a cavalaria é honrada. Não há dúvida, não há sombra de incerteza. GRYFFINDOR!"
-}"
-status: "SUCCESS"
-student_name: "Harry Potter"
+```json
+{
+  "insertId": "6ab5194d00003d495e340c2b",
+  "jsonPayload": {
+    "message": "[CHAPÉU SELETOR - IA] Processamento de seleção concluído.",
+    "service": "hogwarts-sorting-api",
+    "payload": {
+      "student_name": "Harry Potter",
+      "status": "SUCCESS",
+      "ia_response": "{\n  \"house\": \"Grifinória\",\n  \"reason\": \"Ah, Potter... um nome que ecoa através dos salões de Hogwarts com a força de um trovão. Sinto sua mente, um caldeirão borbulhante de emoções e um potencial colossal. Vejo o peso de um legado imenso, a sombra de um destino que você carrega com uma resiliência notável. Muitos pensariam na astúcia, na sede de provar-se, na capacidade de sobrevivência que roça o ardiloso... sim, há um toque ali, uma conexão profunda com um poder que poderia ter levado a outro caminho. Poderia florescer onde a ambição e a determinação são a moeda mais forte, e a sua linhagem, por mais que negue, tem raízes profundas ali. A tentação é forte, oh, sim, muito forte para a Sonserina. Mas não é só isso. Sinto a lealdade inabalável aos seus amigos, um coração que busca a justiça e a verdade, mesmo que isso signifique dor e sacrifício. E a inteligência, a sagacidade para desvendar segredos e a curiosidade para entender o mundo, não são desprezíveis. Contudo, no fundo do seu ser, mais profundo que qualquer astúcia ou desejo de conhecimento, reside uma coragem que arde como um braseiro inextinguível. Não é uma coragem temerária, mas a bravura de enfrentar o que é certo, mesmo quando o medo é paralisante. É a audácia de se levantar contra a escuridão, a tenacidade de proteger aqueles que ama, a vontade inquebrantável de fazer o bem. É a sua escolha, Potter, que o define, e essa escolha aponta para um único lugar. Onde os corações valentes encontram seu lar, onde a ousadia é celebrada e a cavalaria é honrada. Não há dúvida, não há sombra de incerteza. GRYFFINDOR!\"\n}"
+    }
+  }
+}
