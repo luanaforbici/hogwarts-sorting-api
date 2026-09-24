@@ -31,40 +31,49 @@ API Serverless orientada a eventos implantada na Google Cloud Platform (GCP) que
 
  ---
 
- ### Justificativa das Escolhas Arquiteturais
+ 🧠 Decisões Técnicas
+Google Cloud Pub/Sub
 
-* **Arquitetura Event-Driven (GCP Pub/Sub + Eventarc)**
-  * **Por quê:** Garante o desacoplamento total entre os produtores de eventos e o backend de processamento. O Pub/Sub absorve picos de tráfego de forma resiliente e o Eventarc entrega os eventos de maneira automática para a Cloud Function.
+Foi utilizado para implementar a comunicação assíncrona e orientada a eventos.
 
-* **GCP Cloud Functions (2ª Geração / Cloud Run)**
-  * **Por quê:** Adota o modelo *scale-to-zero* (custo zero quando ocioso). A 2ª geração roda sobre a infraestrutura do Cloud Run, proporcionando maior tempo limite de execução (*timeout*) e melhor capacidade de concorrência para chamadas à API de IA.
+A escolha permite desacoplar o envio da mensagem do processamento da aplicação, evitando que o produtor precise aguardar diretamente a execução da IA.
 
-* **Vertex AI com Modelo `gemini-2.5-flash`**
-  * **Por quê:** O modelo Flash foi escolhido por sua baixíssima latência e excelente custo-benefício para geração de texto criativo.
-  * **Otimização do Tempo de Resposta (`tools: []`):** O parâmetro `tools: []` desativa expressamente o *Automatic Function Calling* (AFC) da SDK, evitando processamentos desnecessários e garantindo a resposta mais rápida possível.
-  * **Structured Outputs (`response_mime_type: "application/json"`):** Garante que o modelo retorne estritamente um schema JSON válido, eliminando falhas de parsing no backend.
+Cloud Functions 2ª geração
 
-* **Observabilidade e Logs Estruturados (Cloud Logging)**
-  * **Por quê:** A aplicação emite logs formatados em JSON (`severity`, `message`, `payload`), facilitando a auditoria, a rastreabilidade dos retornos da IA e a criação de alertas ou métricas no GCP.
+A Cloud Function foi escolhida por ser uma solução serverless, adequada ao processamento de eventos do Pub/Sub.
+
+A segunda geração utiliza a infraestrutura do Cloud Run, proporcionando escalabilidade automática sem a necessidade de gerenciar servidores.
+
+Vertex AI + Gemini 2.5 Flash
+
+O Vertex AI foi utilizado para integrar a IA generativa à aplicação.
+
+O Gemini 2.5 Flash realiza a classificação do estudante e gera a justificativa.
+
+O modelo foi escolhido por ser adequado para tarefas de geração de texto com baixa latência.
+
+A resposta é solicitada no formato JSON, facilitando o processamento pelo backend:
 
 --- 
 
-## 🛠️ Tecnologias e SDKs
-
-* **Linguagem:** Python 3.11
-* **Plataforma Nuvem:** Google Cloud Platform (GCP)
-* **Serviços Utilizados:** Cloud Pub/Sub, Cloud Functions v2, Eventarc, Vertex AI, Cloud Logging
-* **Bibliotecas Python principais:** `google-genai`, `functions-framework`, `cloudevents`
+🛠️ Tecnologias
+Python 3.11
+Google Cloud Pub/Sub
+Cloud Functions 2ª geração
+Vertex AI
+Gemini 2.5 Flash
+Cloud Logging
 
 ---
 
-## 🔒 Segurança e Boas Práticas
+🔒 Segurança
 
-Conforme as diretrizes de segurança adotadas no projeto:
+As credenciais não são armazenadas no código ou no repositório.
 
-* **Autenticação Nativa (IAM):** Nenhuma chave de API (*API Keys*) ou *Service Account Key* em formato `.json` foi versionada no repositório.
-* **Service Accounts Dedicadas:** A aplicação utiliza a Service Account nativa do ambiente Google Cloud, gerenciada com permissões mínimas no IAM (como o papel de executor da Vertex AI).
-* **Gitignore Configurado:** Todos os arquivos de ambiente (`.env`), dados locais de desenvolvimento e credenciais temporárias foram estritamente excluídos do controle de versão.
+Não são utilizadas API Keys no código.
+Credenciais de Service Account não são versionadas.
+Arquivos .json e .env são excluídos pelo .gitignore.
+O acesso aos serviços da GCP utiliza as permissões da identidade de execução da aplicação.
 
 📁 Estrutura do Repositório
 .
