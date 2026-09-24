@@ -1,51 +1,52 @@
-# 🏰 Hogwarts Sorting API - Event-Driven & IA (Projeto Final)
+# 🧙‍♂️ Hogwarts Sorting Hat API (Serverless + GenAI)
 
-Esta aplicação implementa um sistema serverless e orientado a eventos (*event-driven*) no Google Cloud Platform (GCP) para a seleção das casas de Hogwarts. A solução utiliza o **Pub/Sub** para ingestão assíncrona, uma **Cloud Function (2ª Geração)** para o processamento e o modelo de IA **Vertex AI (Gemini 1.5 Flash)** para tomar as decisões de seleção com base no perfil do estudante.
+Uma API Serverless orientada a eventos criada no Google Cloud Platform (GCP) que simula o **Chapéu Seletor de Hogwarts**. A aplicação processa o nome de um estudante enviado via Pub/Sub e utiliza a **Vertex AI (Gemini 2.5 Flash)** para determinar a casa de Hogwarts e gerar uma justificativa única, criativa e persuasiva.
 
 ---
 
-## 🏗️ Arquitetura do Sistema
-[ Ingestão / Pub/Sub ] ──( CloudEvent )──> [ Cloud Function v2 ] ──( API Call )──> [ Vertex AI / Gemini ]
+## 🏗️ Arquitetura do Projeto
+[ Cliente / Mensagem ]
 │
-└──( Logs JSON )──> [ Cloud Logging ]
+▼
+┌──────────────┐
+│ GCP Pub/Sub  │  (Tópico: hogwarts-sorting-topic)
+└───────┬──────┘
+│ (Eventarc / Cloud Event)
+▼
+┌──────────────────────┐
+│ GCP Cloud Functions  │  (Python 3.11 / Cloud Run Backend)
+│    (2ª Geração)      │
+└───────┬──────────────┘
+│
+├───► [ Vertex AI / Gemini 2.5 Flash ] (Gera Seleção + Justificativa em JSON)
+│
+▼
+┌──────────────────────┐
+│ Cloud Logging (Logs) │  (Saída Estruturada)
+└──────────────────────┘
 
-### Fluxo de Funcionamento:
-1. Um evento com os dados do estudante é publicado no tópico Pub/Sub `hogwarts-sorting-topic`.
-2. O Pub/Sub aciona a Cloud Function de 2ª Geração (`hogwarts-sorting-pubsub`) via gatilho de CloudEvent.
-3. A função envia o prompt com as informações do aluno para a **Vertex AI (Gemini)**.
-4. O Gemini determina a casa correta e gera uma justificativa em formato JSON estruturado.
-5. Os dados e métricas são registados no **Google Cloud Logging**.
+1. **Pub/Sub**: Recebe a mensagem contendo o nome do estudante codificado em Base64.
+2. **Eventarc & Cloud Functions (v2)**: Processa o evento de forma assíncrona usando o `functions-framework` com subscrição otimizada para evitar duplicidades de execução.
+3. **Vertex AI SDK (`google-genai`)**: Consome o modelo `gemini-2.5-flash` configurado com `temperature: 0.9` e `response_mime_type: "application/json"` para garantir respostas criativas, ultrarrápidas e estritamente formatadas.
+4. **Cloud Logging**: Armazena a resposta em formato JSON estruturado com a casa atribuída (*Grifinória, Sonserina, Corvinal ou Lufa-Lufa*) e a justificativa em Português do Brasil.
 
 ---
 
-## 🧠 Decisões Arquiteturais & Justificativas Técnicas
+## 🛠️ Tecnologias Utilizadas
 
-* **Arquitetura Event-Driven Assíncrona (Pub/Sub)**:
-  * **Justificativa**: Desacopla a ingestão de dados do processamento do modelo de IA. Isso permite absorver picos de tráfego sem sobrecarregar a API do modelo e garante resiliência com retentativas automáticas (*retries*) em caso de falha.
-* **Cloud Functions 2ª Geração (engine Cloud Run)**:
-  * **Justificativa**: Proporciona um tempo limite (*timeout*) estendido para aguardar a resposta da IA, suporte nativo ao padrão CloudEvents e escalonamento automático até zero (*scale-to-zero*), otimizando custos.
-* **Vertex AI (Gemini 1.5 Flash)**:
-  * **Justificativa**: Modelo escolhido pelo baixo tempo de resposta (latência reduzida), excelente capacidade de inferência e suporte a saídas estruturadas em JSON.
-* **Structured Logging (JSON)**:
-  * **Justificativa**: Facilita a observabilidade e a análise das decisões tomadas pela IA diretamente no Google Cloud Logging.
+- **Linguagem**: Python 3.11
+- **Plataforma Cloud**: Google Cloud Platform (GCP)
+- **Serviços Serverless**: Cloud Functions (2ª Geração) / Cloud Run / Eventarc
+- **Mensageria**: Cloud Pub/Sub
+- **IA Generativa**: Vertex AI API (`gemini-2.5-flash`)
+- **SDK Oficial**: `google-genai`
 
 ---
 
-## 🚀 Pipeline de CI/CD (GitHub Actions)
+🚀 Como Testar a Aplicação
+Via Cloud Console (Interface Gráfica)
+Acesse o Pub/Sub > Tópicos > selecione hogwarts-sorting-topic.
 
-A integração e implantação contínuas da aplicação são automatizadas via GitHub Actions. Qualquer alteração enviada para a branch `main` dispara o pipeline de build e deploy automático.
+Vá à aba Mensagens e clique em Publicar Mensagem.
 
-### Fluxo do Pipeline (`.github/workflows/deploy.yml`):
-
-1. **Checkout Code**: Baixa o código-fonte atualizado do repositório.
-2. **Set up Python**: Prepara o ambiente com Python 3.11.
-3. **Install Dependencies**: Instala os pacotes descritos no `requirements.txt`.
-4. **Authenticate to GCP**: Autentica de forma segura no Google Cloud usando a Secret `GCP_SA_KEY`.
-5. **Set up Cloud SDK**: Configura as ferramentas da CLI do Google Cloud.
-6. **Enable GCP APIs**: Garante a ativação automática das APIs necessárias (`cloudresourcemanager`, `cloudfunctions`, `cloudbuild`, `artifactregistry`, `run`, `aiplatform`).
-7. **Deploy Cloud Function**: Executa a implantação da função `hogwarts-sorting-pubsub` (gen2) com gatilho no Pub/Sub.
-
-### Evidências Visuais:
-
-* **Execução do Pipeline**: [Visualizar Log do GitHub Actions](docs/deploy_serverless_function.png)
-* **Serviço Ativo no GCP**: [Visualizar Status do Serviço no GCP Console](docs/hogwarts_sorting_pubsub.png)
+No corpo da mensagem, insira o nome de um estudante (ex: Luana Vitorino) e clique em Publicar.
