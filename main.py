@@ -40,22 +40,21 @@ def subscribe(cloud_event):
 
         # 2. Chamada da Vertex AI Gemini
         try:
-            # Prompt reforçando o idioma português, as casas em português e a variação criativa
             prompt = (
                 f"Atue como o Chapéu Seletor de Hogwarts. Analise o nome '{student_name}' "
                 "e selecione uma das quatro casas (Grifinória, Sonserina, Corvinal, Lufa-Lufa). "
                 "Seja extremamente criativo, único e persuasivo no seu discurso. "
                 "Responda OBRIGATORIAMENTE em português do Brasil. "
-                "Retorne estritamente um objeto JSON com as chaves 'house' e 'reason'."
+                "Retorne um JSON contendo as chaves 'house' e 'reason'."
             )
 
-            # Chamada com alta temperatura para maximizar a variação entre chamadas
+            # Configuração que força a saída estrita em JSON e evita cortes
             response = client.models.generate_content(
                 model="gemini-2.5-flash",
                 contents=prompt,
                 config={
-                    "temperature": 1.0,  # Alta variação e criatividade a cada execução
-                    "max_output_tokens": 250,  # Garante que a resposta venha rápida e em < 3 segundos
+                    "temperature": 0.9,
+                    "response_mime_type": "application/json"  # Força o Gemini a estruturar o JSON completo
                 }
             )
             ia_output = response.text
