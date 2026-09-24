@@ -55,6 +55,7 @@ def subscribe(cloud_event):
                 contents=prompt,
                 config={
                     "temperature": 1.0,  # Alta variação e criatividade a cada execução
+                    "max_output_tokens": 250,  # Garante que a resposta venha rápida e em < 3 segundos
                 }
             )
             ia_output = response.text
