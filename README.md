@@ -29,6 +29,7 @@ API Serverless orientada a eventos implantada na Google Cloud Platform (GCP) que
  │ Cloud Logging (Logs) │  (Log Estruturado em JSON)
  └──────────────────────┘
 
+ ---
 
  ### Justificativa das Escolhas Arquiteturais
 
@@ -72,108 +73,19 @@ Conforme as diretrizes de segurança adotadas no projeto:
 ├── .gitignore           # Exclusão de credenciais e arquivos sensíveis
 └── README.md            # Documentação técnica da arquitetura
 
-💻 Código da Aplicação (main.py)
-import json
-import base64
-import logging
-import functions_framework
-from google import genai
-
-logging.basicConfig(level=logging.INFO)
-
-# Inicializa o cliente GenAI apontando para Vertex AI
-client = genai.Client(
-    vertexai=True,
-    project="hogwarts-sorting-api",
-    location="us-central1"
-)
-
-
-def log_structured(severity: str, message: str, payload: dict = None):
-    log_entry = {
-        "severity": severity,
-        "message": message,
-        "service": "hogwarts-sorting-api",
-        "payload": payload or {}
-    }
-    print(json.dumps(log_entry))
-
-
-@functions_framework.cloud_event
-def subscribe(cloud_event):
-    try:
-        # 1. Extração do Payload do Pub/Sub
-        pubsub_data = cloud_event.data.get("message", {}).get("data", "")
-        if not pubsub_data:
-            log_structured("WARNING", "Mensagem recebida sem dados no payload.")
-            return
-
-        student_name = base64.b64decode(pubsub_data).decode("utf-8").strip()
-        if not student_name:
-            log_structured("WARNING", "Nome do estudante está vazio.")
-            return
-
-        # 2. Chamada da Vertex AI Gemini
-        try:
-            prompt = (
-                f"Atue como o Chapéu Seletor de Hogwarts. Analise o nome '{student_name}' "
-                "e selecione uma das quatro casas (Grifinória, Sonserina, Corvinal, Lufa-Lufa). "
-                "Seja extremamente criativo, único e persuasivo no seu discurso. "
-                "Responda OBRIGATORIAMENTE em português do Brasil. "
-                "Retorne um JSON contendo as chaves 'house' e 'reason'."
-            )
-
-            # Configuração otimizada para ser ultrarrápida e desativar o AFC automático
-            response = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=prompt,
-                config={
-                    "temperature": 0.8,
-                    "response_mime_type": "application/json",
-                    "tools": []  # Desativa o Automatic Function Calling (AFC) que estava atrasando
-                }
-            )
-            ia_output = response.text
-
-        except Exception as ia_err:
-            log_structured("ERROR", f"Falha na chamada da Vertex AI: {str(ia_err)}")
-            ia_output = json.dumps({
-                "house": "Grifinória",
-                "reason": f"Seleção de contingência devido a erro na IA: {str(ia_err)}"
-            })
-
-        # 3. Log estruturado do resultado
-        log_structured(
-            severity="INFO",
-            message="[CHAPÉU SELETOR - IA] Processamento de seleção concluído.",
-            payload={
-                "student_name": student_name,
-                "ia_response": ia_output,
-                "status": "SUCCESS"
-            }
-        )
-
-    except Exception as e:
-        log_structured(
-            severity="ERROR",
-            message=f"Falha crítica na função: {str(e)}",
-            payload={"error_detail": str(e)}
-        )
+---
 
 ## 🧪 Como Testar a Aplicação
 
-Os testes da aplicação foram realizados diretamente pela interface gráfica do **Google Cloud Console**:
+Os testes foram realizados diretamente via interface gráfica do **Google Cloud Console**:
 
 1. Acesse o console do **Cloud Pub/Sub** e selecione o tópico `hogwarts-sorting-topic`.
-2. Vá até a aba **Mensagens** e clique em **Publicar mensagem**.
-3. No campo do corpo da mensagem, informe o nome do estudante (ex: `Harry Potter`) e clique em **Publicar**.
-4. O evento é processado de forma assíncrona pela Cloud Function v2 e o resultado fica disponível no **Cloud Logging**.
+2. Na aba **Mensagens**, clique em **Publicar mensagem**.
+3. No corpo da mensagem, envie o nome do estudante (ex: `Harry Potter`).
+4. O evento será processado de forma assíncrona e o resultado registrado no **Cloud Logging**.
 
----
-
-## 📑 Exemplo de Saída nos Logs (Cloud Logging)
-
-Exemplo real extraído dos logs da aplicação após o processamento da mensagem de teste:
+<details>
+<summary>🔍 <b>Clique aqui para ver o log real extraído do Cloud Logging</b></summary>
 
 ```json
 {
