@@ -51,7 +51,7 @@ def subscribe(cloud_event):
 
             # Chamada com alta temperatura para maximizar a variação entre chamadas
             response = client.models.generate_content(
-                model="gemini-1.5-flash-001",
+                model="gemini-2.5-flash",
                 contents=prompt,
                 config={
                     "temperature": 1.0,  # Alta variação e criatividade a cada execução
