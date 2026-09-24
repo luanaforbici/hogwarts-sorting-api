@@ -29,7 +29,8 @@ API Serverless orientada a eventos implantada na Google Cloud Platform (GCP) que
  │ Cloud Logging (Logs) │  (Log Estruturado em JSON)
  └──────────────────────┘
 
-### Justificativa das Escolhas Arquiteturais
+
+ ### Justificativa das Escolhas Arquiteturais
 
 * **Arquitetura Event-Driven (GCP Pub/Sub + Eventarc)**
   * **Por quê:** Garante o desacoplamento total entre os produtores de eventos e o backend de processamento. O Pub/Sub absorve picos de tráfego de forma resiliente e o Eventarc entrega os eventos de maneira automática para a Cloud Function.
@@ -44,7 +45,7 @@ API Serverless orientada a eventos implantada na Google Cloud Platform (GCP) que
 
 * **Observabilidade e Logs Estruturados (Cloud Logging)**
   * **Por quê:** A aplicação emite logs formatados em JSON (`severity`, `message`, `payload`), facilitando a auditoria, a rastreabilidade dos retornos da IA e a criação de alertas ou métricas no GCP.
- 
+
 --- 
 
 ## 🛠️ Tecnologias e SDKs
